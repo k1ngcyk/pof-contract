@@ -7,10 +7,10 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "erc721a/contracts/ERC721A.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract POF is ERC721Enumerable, Ownable {
+contract POF is ERC721A, Ownable {
     using Strings for uint256;
 
     string baseURI;
@@ -18,18 +18,28 @@ contract POF is ERC721Enumerable, Ownable {
     uint256 public cost = 0.05 ether;
     uint256 public maxSupply = 5555;
     uint256 public maxMintAmount = 10;
+    uint256 public amountMinted;
+    uint256 public maxUserMintAmount = 20;
+    mapping(address => uint256) public userMintedAmount;
     bool public paused = false;
     bool public revealed = false;
     string public notRevealedUri;
 
+    // ERC721R
+    uint256 public refundEndTime;
+    address public refundAddress;
+    uint256 public constant refundPeriod = 7 days;
+
     constructor(
-        string memory _name,
-        string memory _symbol,
         string memory _initBaseURI,
         string memory _initNotRevealedUri
-    ) ERC721(_name, _symbol) {
+    ) ERC721A("Phone On Face", "POF") {
         setBaseURI(_initBaseURI);
         setNotRevealedURI(_initNotRevealedUri);
+        // ERC721R: Start
+        refundAddress = msg.sender;
+        toggleRefundCountdown();
+        // ERC721R: End
     }
 
     // internal
@@ -40,31 +50,45 @@ contract POF is ERC721Enumerable, Ownable {
     // public
     function mint(uint256 _mintAmount) public payable {
         uint256 supply = totalSupply();
-        require(!paused);
-        require(_mintAmount > 0);
-        require(_mintAmount <= maxMintAmount);
-        require(supply + _mintAmount <= maxSupply);
+        require(!paused, "Sale is not active");
+        require(_mintAmount > 0, "Must mint at least 1 POF");
+        require(_mintAmount <= maxMintAmount, "No more than 10 POF in a tx");
+        require(supply + _mintAmount <= maxSupply, "Max mint supply reached");
+        require(
+            userMintedAmount[msg.sender] + _mintAmount <= maxUserMintAmount,
+            "Over mint limit"
+        );
 
         if (msg.sender != owner()) {
-            require(msg.value >= cost * _mintAmount);
+            require(msg.value >= cost * _mintAmount, "Not enough eth sent");
         }
 
-        for (uint256 i = 1; i <= _mintAmount; i++) {
-            _safeMint(msg.sender, supply + i);
-        }
+        amountMinted += _mintAmount;
+        userMintedAmount[msg.sender] += _mintAmount;
+        _safeMint(msg.sender, _mintAmount);
     }
 
-    function walletOfOwner(address _owner)
-        public
-        view
-        returns (uint256[] memory)
-    {
-        uint256 ownerTokenCount = balanceOf(_owner);
-        uint256[] memory tokenIds = new uint256[](ownerTokenCount);
-        for (uint256 i; i < ownerTokenCount; i++) {
-            tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
+    function tokensOfOwner(address owner) external view returns (uint256[] memory) {
+        unchecked {
+            uint256 tokenIdsIdx;
+            address currOwnershipAddr;
+            uint256 tokenIdsLength = balanceOf(owner);
+            uint256[] memory tokenIds = new uint256[](tokenIdsLength);
+            TokenOwnership memory ownership;
+            for (uint256 i = _startTokenId(); tokenIdsIdx != tokenIdsLength; ++i) {
+                ownership = _ownerships[i];
+                if (ownership.burned) {
+                    continue;
+                }
+                if (ownership.addr != address(0)) {
+                    currOwnershipAddr = ownership.addr;
+                }
+                if (currOwnershipAddr == owner) {
+                    tokenIds[tokenIdsIdx++] = i;
+                }
+            }
+            return tokenIds;
         }
-        return tokenIds;
     }
 
     function tokenURI(uint256 tokenId)
@@ -128,15 +152,35 @@ contract POF is ERC721Enumerable, Ownable {
         paused = _state;
     }
 
-    function withdraw() public payable onlyOwner {
-        // This will pay pof 5% of the initial sale.
-        // (bool hs, ) = payable().call {
-        //     value: address(this).balance * 5 / 100
-        // }("");
-        // require(hs);
+    // ERC721R
+    function refundGuaranteeActive() public view returns (bool) {
+        return (block.timestamp <= refundEndTime);
+    }
 
-        // This will payout the owner 95% of the contract balance.
-        (bool os, ) = payable(owner()).call{value: address(this).balance}("");
-        require(os);
+    function refund(uint256[] calldata tokenIds) external {
+        require(refundGuaranteeActive(), "Refund expired");
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            require(msg.sender == ownerOf(tokenId), "Not token owner");
+            transferFrom(msg.sender, refundAddress, tokenId);
+        }
+
+        uint256 refundAmount = tokenIds.length * cost;
+        Address.sendValue(payable(msg.sender), refundAmount);
+    }
+
+    function toggleRefundCountdown() public onlyOwner {
+        refundEndTime = block.timestamp + refundPeriod;
+    }
+
+    function setRefundAddress(address _refundAddress) external onlyOwner {
+        refundAddress = _refundAddress;
+    }
+
+   function withdraw() external onlyOwner {
+        require(block.timestamp > refundEndTime, "Refund period not over");
+        uint256 balance = address(this).balance;
+        Address.sendValue(payable(owner()), balance);
     }
 }
