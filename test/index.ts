@@ -1,19 +1,43 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import chai from "chai";
+import { solidity } from "ethereum-waffle";
+import { beforeEach } from "mocha";
+import { Contract } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-describe("Greeter", function () {
-  it("Should return the new greeting once it's changed", async function () {
-    const Greeter = await ethers.getContractFactory("Greeter");
-    const greeter = await Greeter.deploy("Hello, world!");
-    await greeter.deployed();
+chai.use(solidity);
 
-    expect(await greeter.greet()).to.equal("Hello, world!");
+describe("Phone On Face", () => {
+  let pof: Contract;
+  let owner: SignerWithAddress;
+  let address1: SignerWithAddress;
 
-    const setGreetingTx = await greeter.setGreeting("Hola, mundo!");
+  beforeEach(async () => {
+    const POFFactory = await ethers.getContractFactory("POF");
+    [owner, address1] = await ethers.getSigners();
+    pof = await POFFactory.deploy("baseuri", "notrevealeduri");
+    await pof.deployed();
+  });
 
-    // wait until the transaction is mined
-    await setGreetingTx.wait();
+  it("Should initialize the contract", async () => {
+    expect(await pof.maxSupply()).to.equal(5555);
+  });
 
-    expect(await greeter.greet()).to.equal("Hola, mundo!");
+  it("Should set the right owner", async () => {
+    expect(await pof.owner()).to.equal(await owner.address);
+  });
+
+  it("Should mint an nft", async () => {
+    const nftCost = await pof.cost();
+    const tokenId = await pof.totalSupply();
+    expect(
+      // pof.mint(amount)
+      await pof.mint(5, {
+        value: 5 * nftCost,
+      })
+    )
+    .to.emit(pof, "Transfer")
+    .withArgs(ethers.constants.AddressZero, owner.address, tokenId + 4);
   });
 });
