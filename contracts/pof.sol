@@ -36,9 +36,10 @@ contract POF is ERC721A, Ownable {
     ) ERC721A("Phone On Face", "POF") {
         setBaseURI(_initBaseURI);
         setNotRevealedURI(_initNotRevealedUri);
-        // ERC721R
+        // ERC721R: Start
         refundAddress = msg.sender;
         toggleRefundCountdown();
+        // ERC721R: End
     }
 
     // internal
@@ -119,7 +120,7 @@ contract POF is ERC721A, Ownable {
                 : "";
     }
 
-    // only owner
+    //only owner
     function reveal() public onlyOwner {
         revealed = true;
     }
@@ -157,6 +158,7 @@ contract POF is ERC721A, Ownable {
     }
 
     function refund(uint256[] calldata tokenIds) external {
+        require(msg.sender != refundAddress, "Caller cant be refund address");
         require(refundGuaranteeActive(), "Refund expired");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
