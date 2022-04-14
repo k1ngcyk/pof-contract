@@ -14,7 +14,6 @@ contract POF is ERC721A, Ownable {
     using Strings for uint256;
 
     string baseURI;
-    string public baseExtension = ".json";
     uint256 public cost = 0.05 ether;
     uint256 public maxSupply = 5555;
     uint256 public maxMintAmount = 10;
@@ -107,8 +106,7 @@ contract POF is ERC721A, Ownable {
                 ? string(
                     abi.encodePacked(
                         currentBaseURI,
-                        tokenId.toString(),
-                        baseExtension
+                        tokenId.toString()
                     )
                 )
                 : "";
@@ -129,13 +127,6 @@ contract POF is ERC721A, Ownable {
 
     function setBaseURI(string memory _newBaseURI) public onlyOwner {
         baseURI = _newBaseURI;
-    }
-
-    function setBaseExtension(string memory _newBaseExtension)
-        public
-        onlyOwner
-    {
-        baseExtension = _newBaseExtension;
     }
 
     function pause(bool _state) public onlyOwner {
