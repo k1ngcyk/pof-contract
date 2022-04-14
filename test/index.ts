@@ -16,7 +16,8 @@ describe("Phone On Face", () => {
   beforeEach(async () => {
     const POFFactory = await ethers.getContractFactory("POF");
     [owner, address1] = await ethers.getSigners();
-    pof = await POFFactory.deploy("baseuri", "notrevealeduri");
+    const baseuri = "https://api.phoneonface.xyz/metadata/"
+    pof = await POFFactory.deploy(baseuri);
     await pof.deployed();
   });
 
