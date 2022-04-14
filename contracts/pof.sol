@@ -23,7 +23,6 @@ contract POF is ERC721A, Ownable {
     mapping(address => uint256) public userMintedAmount;
     bool public paused = false;
     bool public revealed = false;
-    string public notRevealedUri;
 
     // ERC721R
     uint256 public refundEndTime;
@@ -31,11 +30,10 @@ contract POF is ERC721A, Ownable {
     uint256 public constant refundPeriod = 7 days;
 
     constructor(
-        string memory _initBaseURI,
-        string memory _initNotRevealedUri
+        string memory _initBaseURI
     ) ERC721A("Phone On Face", "POF") {
         setBaseURI(_initBaseURI);
-        setNotRevealedURI(_initNotRevealedUri);
+
         // ERC721R: Start
         refundAddress = msg.sender;
         toggleRefundCountdown();
@@ -103,10 +101,6 @@ contract POF is ERC721A, Ownable {
             "ERC721Metadata: URI query for nonexistent token"
         );
 
-        if (revealed == false) {
-            return notRevealedUri;
-        }
-
         string memory currentBaseURI = _baseURI();
         return
             bytes(currentBaseURI).length > 0
@@ -131,10 +125,6 @@ contract POF is ERC721A, Ownable {
 
     function setmaxMintAmount(uint256 _newmaxMintAmount) public onlyOwner {
         maxMintAmount = _newmaxMintAmount;
-    }
-
-    function setNotRevealedURI(string memory _notRevealedURI) public onlyOwner {
-        notRevealedUri = _notRevealedURI;
     }
 
     function setBaseURI(string memory _newBaseURI) public onlyOwner {

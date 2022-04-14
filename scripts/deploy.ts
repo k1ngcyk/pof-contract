@@ -14,8 +14,9 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
+  const baseuri = "https://api.phoneonface.xyz/metadata/"
   const POF = await ethers.getContractFactory("POF");
-  const pof = await POF.deploy("baseuri", "notrevealeduri");
+  const pof = await POF.deploy(baseuri);
 
   await pof.deployed();
 
