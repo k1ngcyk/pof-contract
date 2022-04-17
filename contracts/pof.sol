@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 // Phone on face
-/**
-    !Disclaimer!
-*/
 
 pragma solidity ^0.8.0;
 
@@ -23,9 +20,7 @@ contract POF is ERC721A, Ownable {
     bool public paused = false;
     bool public revealed = false;
 
-    constructor(
-        string memory _initBaseURI
-    ) ERC721A("Phone on Face", "POF") {
+    constructor(string memory _initBaseURI) ERC721A("Phone on Face", "POF") {
         setBaseURI(_initBaseURI);
     }
 
@@ -55,14 +50,22 @@ contract POF is ERC721A, Ownable {
         _safeMint(msg.sender, _mintAmount);
     }
 
-    function tokensOfOwner(address owner) external view returns (uint256[] memory) {
+    function tokensOfOwner(address owner)
+        external
+        view
+        returns (uint256[] memory)
+    {
         unchecked {
             uint256 tokenIdsIdx;
             address currOwnershipAddr;
             uint256 tokenIdsLength = balanceOf(owner);
             uint256[] memory tokenIds = new uint256[](tokenIdsLength);
             TokenOwnership memory ownership;
-            for (uint256 i = _startTokenId(); tokenIdsIdx != tokenIdsLength; ++i) {
+            for (
+                uint256 i = _startTokenId();
+                tokenIdsIdx != tokenIdsLength;
+                ++i
+            ) {
                 ownership = _ownerships[i];
                 if (ownership.burned) {
                     continue;
@@ -93,12 +96,7 @@ contract POF is ERC721A, Ownable {
         string memory currentBaseURI = _baseURI();
         return
             bytes(currentBaseURI).length > 0
-                ? string(
-                    abi.encodePacked(
-                        currentBaseURI,
-                        tokenId.toString()
-                    )
-                )
+                ? string(abi.encodePacked(currentBaseURI, tokenId.toString()))
                 : "";
     }
 
@@ -123,7 +121,7 @@ contract POF is ERC721A, Ownable {
         paused = _state;
     }
 
-   function withdraw() external onlyOwner {
+    function withdraw() external onlyOwner {
         uint256 balance = address(this).balance;
         Address.sendValue(payable(owner()), balance);
     }
