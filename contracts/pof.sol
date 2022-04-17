@@ -25,7 +25,7 @@ contract POF is ERC721A, Ownable {
 
     constructor(
         string memory _initBaseURI
-    ) ERC721A("Phone On Face", "POF") {
+    ) ERC721A("Phone on Face", "POF") {
         setBaseURI(_initBaseURI);
     }
 
