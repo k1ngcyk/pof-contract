@@ -23,20 +23,10 @@ contract POF is ERC721A, Ownable {
     bool public paused = false;
     bool public revealed = false;
 
-    // ERC721R
-    uint256 public refundEndTime;
-    address public refundAddress;
-    uint256 public constant refundPeriod = 7 days;
-
     constructor(
         string memory _initBaseURI
     ) ERC721A("Phone On Face", "POF") {
         setBaseURI(_initBaseURI);
-
-        // ERC721R: Start
-        refundAddress = msg.sender;
-        toggleRefundCountdown();
-        // ERC721R: End
     }
 
     // internal
@@ -133,35 +123,7 @@ contract POF is ERC721A, Ownable {
         paused = _state;
     }
 
-    // ERC721R
-    function refundGuaranteeActive() public view returns (bool) {
-        return (block.timestamp <= refundEndTime);
-    }
-
-    function refund(uint256[] calldata tokenIds) external {
-        require(msg.sender != refundAddress, "Caller cant be refund address");
-        require(refundGuaranteeActive(), "Refund expired");
-
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            uint256 tokenId = tokenIds[i];
-            require(msg.sender == ownerOf(tokenId), "Not token owner");
-            transferFrom(msg.sender, refundAddress, tokenId);
-        }
-
-        uint256 refundAmount = tokenIds.length * cost;
-        Address.sendValue(payable(msg.sender), refundAmount);
-    }
-
-    function toggleRefundCountdown() public onlyOwner {
-        refundEndTime = block.timestamp + refundPeriod;
-    }
-
-    function setRefundAddress(address _refundAddress) external onlyOwner {
-        refundAddress = _refundAddress;
-    }
-
    function withdraw() external onlyOwner {
-        require(block.timestamp > refundEndTime, "Refund period not over");
         uint256 balance = address(this).balance;
         Address.sendValue(payable(owner()), balance);
     }
