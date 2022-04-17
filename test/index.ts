@@ -1,9 +1,9 @@
-import { expect } from "chai";
+import { expect, util } from "chai";
 import { ethers } from "hardhat";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
 import { beforeEach } from "mocha";
-import { Contract } from "ethers";
+import { Contract, utils } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 chai.use(solidity);
@@ -35,7 +35,7 @@ describe("Phone On Face", () => {
     expect(
       // pof.mint(amount)
       await pof.mint(5, {
-        value: 5 * nftCost,
+        value: utils.parseEther((5 * nftCost).toString()),
       })
     )
     .to.emit(pof, "Transfer")
