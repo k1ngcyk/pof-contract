@@ -36,12 +36,12 @@ contract POF is ERC721A, Ownable {
         require(_mintAmount > 0, "Must mint at least 1 POF");
         require(_mintAmount <= maxMintAmount, "No more than 10 POF in a tx");
         require(supply + _mintAmount <= maxSupply, "Max mint supply reached");
-        require(
-            userMintedAmount[msg.sender] + _mintAmount <= maxUserMintAmount,
-            "Over mint limit"
-        );
 
         if (msg.sender != owner()) {
+            require(
+                userMintedAmount[msg.sender] + _mintAmount <= maxUserMintAmount,
+                "Over mint limit"
+            );
             require(msg.value >= cost * _mintAmount, "Not enough eth sent");
         }
 
